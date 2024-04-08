@@ -1,4 +1,4 @@
-numpy==1.21
+numpy==1.22
 ipython==7.27
 keras-lr-finder==0.1
 seaborn==0.11
