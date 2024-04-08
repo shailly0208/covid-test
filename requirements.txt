@@ -2,5 +2,5 @@ numpy==1.21
 ipython==7.27
 keras-lr-finder==0.1
 seaborn==0.11
-tensorflow==2.7
+tensorflow==2.12
 gunicorn==20.1
