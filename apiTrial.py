@@ -1,44 +1,12 @@
 from flask import Flask, request, jsonify, render_template_string
-import pandas as pd
 import numpy as np
 from PIL import Image, ImageOps
-import plotly.express as px
-import matplotlib.pyplot as plt
-import seaborn as sns
 import pickle
-from tqdm import tqdm
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from sklearn import svm
-import tensorflow as tf
 #from keras.src.legacy.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 #from tensorflow.keras.callbacks import EarlyStopping
 #from keras.preprocessing.image import ImageDataGenerator
-
 from skimage.feature import hog
-import keras
-from keras import layers
-from keras.models import Sequential
-from keras.layers import Dense, Activation, Dropout
-from sklearn.metrics import classification_report
-
-
-from sklearn.naive_bayes import MultinomialNB
-
-
-import xgboost as xgb
-from sklearn import svm
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.svm import SVC
-from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score
 import requests
 
 app = Flask(__name__)
