@@ -1,18 +1,22 @@
+import os
 from flask import Flask, request, jsonify, render_template_string
 import numpy as np
 from PIL import Image, ImageOps
 import pickle
 from skimage.feature import hog
-import pandas as pd
-import requests
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+UPLOAD_FOLDER = 'uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
 # Define an endpoint for a POST request to make predictions
 HTML_FORM = '''
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Image Path Submission</title>
+    <title>Image Submission</title>
     <style>
         body {
             display: flex;
@@ -29,7 +33,7 @@ HTML_FORM = '''
             align-items: center;
             width: 300px; /* Adjust the width as needed */
         }
-        input[type="text"] {
+        input[type="file"] {
             display: flex;
             flex-direction: column;
             width: 100%;
@@ -57,9 +61,9 @@ HTML_FORM = '''
     </style>
 </head>
 <body>
-    <h1 class="title">ML Model Prediction using Lung X-Ray detecting COVID, Pneumonia etc</h1>
+<h1 class="title">ML Model Prediction using Lung X-Ray detecting COVID, Pneumonia etc</h1>
     <form action="/" method="post" enctype="multipart/form-data">
-        <input type="text" name="image_path" placeholder="Enter image path (e.g., /path/to/image.jpg)"/>
+        <input type="file" name="image_file" accept="image/*">
         <button type="submit">Predict</button>
     </form>
     <div class="prediction-container">
@@ -79,34 +83,16 @@ with open('svm_model.pkl', 'rb') as file:
 
 @app.route('/api/predictions', methods=['POST'])
 def make_prediction():
-    image_path = request.form.get('image_path')
-    #image_path = 'user_image/COVID-18_test1.png'
-    print(image_path)
-
-    def extract_hog_features(image):
-        user_input_gray = np.array(image)
-        user_features = hog(user_input_gray, orientations=9, pixels_per_cell=(8, 8),
-                cells_per_block=(2, 2), transform_sqrt=True,
-                block_norm='L2-Hys')
-        return user_features
-
-    def extract_features_from_user_input(image_path):
-        try:
-            with open(image_path, 'rb') as img_file:
-                image_data = Image.open(img_file)
-                img_gray = ImageOps.grayscale(image_data)
-                img_resized = img_gray.resize((64, 64))
-                user_hog_features = extract_hog_features(img_resized)
-                return user_hog_features
-
-        except Exception as e:
-            print("Error:", e)
-            return None
-        
-    user_input_features = extract_features_from_user_input(image_path)
-    if user_input_features is not None:
+    image_file = request.files.get('image_file')
+    if image_file:
+        image = Image.open(image_file)
+        user_input_gray = ImageOps.grayscale(image)
+        user_input_resized = user_input_gray.resize((64, 64))
+        user_input_array = np.array(user_input_resized)
+        user_input_features = hog(user_input_array, orientations=9, pixels_per_cell=(8, 8), cells_per_block=(2, 2), transform_sqrt=True, block_norm='L2-Hys')
         user_input_features_reshaped = user_input_features.reshape(1, -1)
         prediction = svm_model.predict(user_input_features_reshaped)
+
         label_mapping = {
             0: 'Normal',
             1: 'COVID',
@@ -116,14 +102,26 @@ def make_prediction():
         prediction_label = label_mapping.get(prediction[0], 'Unknown')
         return jsonify({'prediction': prediction_label})
     else:
-        return jsonify({'error': 'Check the  image file location'})
+        return jsonify({'error': 'No image file provided'})
 
 @app.route('/', methods=['POST','GET'])
 def submit_image():
     if request.method == 'GET':
         return render_template_string(HTML_FORM)
-    image_path = request.form['image_path']
-    response = requests.post('http://127.0.0.1:5000/api/predictions', data={'image_path': image_path})
+    
+    if 'image_file' not in request.files:
+        return render_template_string(HTML_FORM, error='No file part')
+    
+    image_file = request.files['image_file']
+    if image_file.filename == '':
+        return render_template_string(HTML_FORM, error='No selected file')
+    
+    filename = secure_filename(image_file.filename)
+    image_path = os.path.join(UPLOAD_FOLDER, filename)
+    image_file.save(image_path)
+    
+    response = requests.post('http://127.0.0.1:5000/api/predictions', files={'image_file': open(image_path, 'rb')})
+    
     if response.ok:
         result = response.json()
         prediction = result.get('prediction')
@@ -133,4 +131,4 @@ def submit_image():
         return render_template_string(HTML_FORM, error='Failed to get a response from the prediction API.')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True,host="0.0.0.0",port=5000)
