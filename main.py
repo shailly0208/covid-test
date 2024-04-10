@@ -1,5 +1,6 @@
 import os
 from flask import Flask, request, jsonify, render_template_string
+from flask_cors import CORS  
 import numpy as np
 from PIL import Image, ImageOps
 import pickle
@@ -7,6 +8,7 @@ from skimage.feature import hog
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+CORS(app)
 UPLOAD_FOLDER = 'uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
